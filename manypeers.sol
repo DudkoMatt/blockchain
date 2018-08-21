@@ -194,9 +194,10 @@ contract multiToken is Owner {
     
     function buyToken(uint _id) public payable
     {
-        require(getTokenById[_id].price == msg.value);
+        require(getTokenById[_id].price <= msg.value);
         removeToken(_id);
-        (getTokenById[_id].Owner).transfer(msg.value);
+        (getTokenById[_id].Owner).transfer(getTokenById[_id].price);
+        (msg.sender).transfer(msg.value - getTokenById[_id].price);
         TokenInterface(ERC721Address).transferFrom(address(this), msg.sender, _id);
     }
     

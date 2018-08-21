@@ -16,7 +16,7 @@ library SafeMath {
 
     // benefit is lost if 'b' is also tested.
 
-    // See: https://github.com/OpenZeppelin/openzeppelin-solidity/pull/522
+    // See: https://github.com/OpenZeppelin/opentzherppelin-solidity/pull/522
 
     if (_a == 0) {
 
@@ -329,7 +329,7 @@ contract createBoxes is Ownable {
        }
    }
    
-   function safeTransferFrom(address _from, address _to, uint256 _tokenId) public payable {
+   function safeTransferFrom(address _from, address _to, uint256 _tokenId) public {
       safeTransferFrom(_from,_to, _tokenId, "");
   }  
   
