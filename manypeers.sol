@@ -280,4 +280,3 @@ contract Deal {
     }
     
 }
-

@@ -267,7 +267,7 @@ contract createBoxes is Ownable {
         height = _y;
         for(uint8 i = 0; i < _x; i++){
             for(uint8 j = 0; j < _y; j++){
-                Box memory temp = Box(i, j, 0,0,0, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether);
+                Box memory temp = Box(i, j, 255,255,255, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether);
                 ownerOf[boxes.push(temp)-1] = msg.sender;
                 balanceOf[msg.sender] = balanceOf[msg.sender].add(1);
             }
@@ -277,7 +277,7 @@ contract createBoxes is Ownable {
     
     function generateRowAbove() public onlyOwner {
         for(uint8 i = 0; i < width; i++){
-            safeTransferFrom(address(this), market, boxes.push(Box(i, height, 0,0,0, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether)));
+            safeTransferFrom(address(this), market, boxes.push(Box(i, height, 255,255,255, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether)));
         }
         height++;
     }
@@ -285,7 +285,7 @@ contract createBoxes is Ownable {
     
     function generateRowRigth() public onlyOwner {
         for(uint8 i = 0; i < height; i++){
-            safeTransferFrom(address(this), market, boxes.push(Box(width, i, 0,0,0, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether)));
+            safeTransferFrom(address(this), market, boxes.push(Box(width, i, 255,255,255, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether)));
         }
         width++;
     }
@@ -374,5 +374,4 @@ contract createBoxes is Ownable {
   
  
 }
-
 
