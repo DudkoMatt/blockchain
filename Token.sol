@@ -260,14 +260,14 @@ contract createBoxes is Ownable {
         return uint(keccak256(abi.encodePacked(now, msg.sender, randNonce))) % _modulus;
     }
     
-    //ToDo: Set value
+
     constructor (uint8 _x, uint8 _y) public {
         //uint k = 0;
         width = _x;
         height = _y;
         for(uint8 i = 0; i < _x; i++){
             for(uint8 j = 0; j < _y; j++){
-                Box memory temp = Box(i, j, 0,0,0, uint8(randMod(7)), uint8(randMod(7)), 0);
+                Box memory temp = Box(i, j, 0,0,0, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether);
                 ownerOf[boxes.push(temp)-1] = msg.sender;
                 balanceOf[msg.sender] = balanceOf[msg.sender].add(1);
             }
@@ -275,44 +275,31 @@ contract createBoxes is Ownable {
     }
     
     
-    /*function setApprovalForAll(address _operator) private {
-        require(firstTime);
-        approvedForAll = _operator;
-    }*/
-  
-    /*function getApproved() public view returns (address) {
-        return approvedForAll;
-    }*/
-    
-    
-    //ToDo: Set value
     function generateRowAbove() public onlyOwner {
         for(uint8 i = 0; i < width; i++){
-            safeTransferFrom(address(this), market, boxes.push(Box(i, height, 0,0,0, uint8(randMod(7)), uint8(randMod(7)), 0)));
+            safeTransferFrom(address(this), market, boxes.push(Box(i, height, 0,0,0, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether)));
         }
         height++;
     }
     
-    //ToDo: Set value
+    
     function generateRowRigth() public onlyOwner {
         for(uint8 i = 0; i < height; i++){
-            safeTransferFrom(address(this), market, boxes.push(Box(width, i, 0,0,0, uint8(randMod(7)), uint8(randMod(7)), 0)));
+            safeTransferFrom(address(this), market, boxes.push(Box(width, i, 0,0,0, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether)));
         }
         width++;
     }
     
-    
+    function changePrice(uint _tokenId, uint _price) public onlyOwnerOf(_tokenId) {
+        boxes[_tokenId].value = _price;
+    }
 
     function setAddressOfMarket(address _address) public onlyOwner {
-        
         require(firstTime);
-        
         market = _address;
-        
         for(uint i = 0; i < boxes.length; i++){
             require(SafeTransferInterface(market).onERC721Received(market, msg.sender, i, "") == ERC721_RECEIVED);
         }
-        
         firstTime = false;
     }
     
@@ -347,11 +334,9 @@ contract createBoxes is Ownable {
   }  
   
   
-  // ToDO: Security
+
   function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) public {
-      
       require(msg.sender == ownerOf[_tokenId] || msg.sender == getApproved[_tokenId]);
-      
       getApproved[_tokenId] = _to;
       if(isContract(_to)){
         require(SafeTransferInterface(_to).onERC721Received(msg.sender, _from, _tokenId, data) == ERC721_RECEIVED);
@@ -360,23 +345,17 @@ contract createBoxes is Ownable {
       }
   }
   
-  // ToDO: Security
+  
   function transferFrom(address _from, address _to, uint256 _tokenId) public payable {
-      
       require(msg.sender == ownerOf[_tokenId] || getApproved[_tokenId] == msg.sender || msg.sender == address(this) || msg.sender == market);
-      
       ownerOf[_tokenId] = _to;
       balanceOf[_from] = balanceOf[_from].sub(1);
       balanceOf[_to] = balanceOf[_to].add(1);
   }
   
   
-  // ToDO: Security
   function transfer(address _to, uint256 _tokenId) public {
-      
-       
-       require(msg.sender == ownerOf[_tokenId] || getApproved[_tokenId] == msg.sender || msg.sender == address(this) || msg.sender == market);
-      
+        require(msg.sender == ownerOf[_tokenId] || getApproved[_tokenId] == msg.sender || msg.sender == address(this) || msg.sender == market);
         ownerOf[_tokenId] = _to;
         balanceOf[msg.sender] = balanceOf[msg.sender].sub(1);
         balanceOf[_to] = balanceOf[_to].add(1);
@@ -395,4 +374,5 @@ contract createBoxes is Ownable {
   
  
 }
+
 

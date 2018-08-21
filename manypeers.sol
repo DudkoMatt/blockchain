@@ -1,7 +1,6 @@
 pragma solidity ^0.4.24;
 
-library SafeMat
-{
+library SafeMat {
     function add(uint256 _first, uint256 _second) internal pure returns(uint256)
     {
         uint256 rslt = _first + _second; require( rslt >= _first);
@@ -22,8 +21,7 @@ library SafeMat
     }
 }
 
-contract Owner
-{
+contract Owner {
     address public owner;
     constructor() public
     { owner = msg.sender; }
@@ -34,7 +32,7 @@ contract Owner
         _;
     }
 
-    //function changeOwnership(address _) public onlyOwner{ owner = _; }
+    function changeOwnership(address _) public onlyOwner{ owner = _; }
 
     function destroy() internal onlyOwner
     {
@@ -42,8 +40,7 @@ contract Owner
     }
 }
 
-contract ERC20
-{
+contract ERC20 {
 
     string public constant token = "EarthCoin";
     string public constant symbol = "Ercoin";
@@ -94,8 +91,7 @@ contract ERC20
 
 }
 
-contract ICO is Owner, ERC20  /* Initial Coin Offering */
-{
+contract ICO is Owner, ERC20 {
     uint constant private start = 1534326305;
     uint constant private period = 10;
 
@@ -127,29 +123,22 @@ contract ICO is Owner, ERC20  /* Initial Coin Offering */
     }
 }
 
-
 contract TokenInterface {
     function metadataOf(uint _tokenId) public view returns (uint8 Ox, uint8 Oy, uint8 red, uint8 green, uint8 blue, uint8 weather, uint8 shape, address boxOwner, bool isFree);
     function transferFrom(address _from, address _to, uint256 _tokenId) public payable;
 }
 
-
-///@dev Contract for peer to peers communication
-contract multiToken is Owner
-{
+contract multiToken is Owner {
     
     event NewDealCreated(address indexed _from, address indexed _to, uint indexed _tokenId, uint _price, address _contractAddress);
     
     bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
     
-    struct Token
-    {
+    struct Token {
         uint price;
         address Owner;
         bool isSold;
-
     }
-    
     
     Deal[] allDeals;
     
@@ -160,10 +149,7 @@ contract multiToken is Owner
 
     constructor (address _address) public {
         ERC721Address = _address;
-        // TokenInterface(_address).firstTimeFunction();
     }
-    
-    
 
     modifier onlyERC721() {
         require(msg.sender == ERC721Address);
@@ -185,7 +171,6 @@ contract multiToken is Owner
 
     function addToken(uint _id, address _owner, uint _price) public onlyERC721
     {
-        
         if(getTokenById[_id].isSold){
             readdToken(_id);
         } else {
@@ -205,57 +190,15 @@ contract multiToken is Owner
     {
         require(msg.sender == getTokenById[_id].Owner || msg.sender == address(this));
         getTokenById[_id].isSold = true;
-        
-        // //getTokenById[_id].isSold = true;
-        
-        // require(msg.sender == getTokenById[_id].Owner);
-        
-        // //if(_id >= getAllTokens.length) return;
-        
-        // bool flag = false;
-        
-        // for(uint i = 0; i < getAllTokens.length; i++){
-        //     //getAllTokens[i] = getAllTokens[i+1];
-        //     if(flag){
-        //       getAllTokens[i-1] = getAllTokens[i];
-        //     }
-        //     if(getAllTokens[i] == _id){
-        //         flag = true;
-        //         break;
-        //     } else {
-        //         continue;
-        //     }
-        // }
-        
-        // delete getAllTokens[getAllTokens.length-1];
-        // getAllTokens.length--;
-        // delete getTokenById[_id];
-        
     }
     
     function buyToken(uint _id) public payable
     {
-        
-        //ToDo: РАСКОММЕНТИРОВАТЬ
         require(getTokenById[_id].price == msg.value);
-        
         removeToken(_id);
-        
         (getTokenById[_id].Owner).transfer(msg.value);
-        
         TokenInterface(ERC721Address).transferFrom(address(this), msg.sender, _id);
-        
-        
-        
-        
-        //_seller.transfer(msg.value);
-        
-        
-        
-        //getAllTokens[seller][id].isOnSale = false;
     }
-    
-    
     
 
     function bytesToAddress(bytes a) public pure returns(address){
@@ -278,7 +221,6 @@ contract multiToken is Owner
             Deal newDeal = new Deal(_from, bytesToAddress(_data), _tokenId, getTokenById[_tokenId].price, ERC721Address);
             TokenInterface(ERC721Address).transferFrom(_from, newDeal, _tokenId);
             emit NewDealCreated(_from, bytesToAddress(_data), _tokenId, getTokenById[_tokenId].price, newDeal);
-            allDeals.push(newDeal);
         }
         return ERC721_RECEIVED;
         
@@ -310,6 +252,8 @@ contract Deal {
     uint public tokenId;
     uint public price;
     
+    bool active = true;
+    
     constructor (address _owner, address _to, uint _tokenId, uint _price, address _erc721) public {
         owner = _owner;
         buyer = _to;
@@ -319,6 +263,8 @@ contract Deal {
     }
     
     function buyToken() public payable {
+        require(active);
+        active = false;
         address flag = address(0);
         (,,,,,,,flag,) = TokenInterface(ERC721Address).metadataOf(tokenId);
         require(msg.sender == buyer && msg.value >= price && flag == address(this));
@@ -327,4 +273,11 @@ contract Deal {
         TokenInterface(ERC721Address).transferFrom(address(this), buyer, tokenId);
     }
     
+    function cancelTransaction() public {
+        require(msg.sender == owner || msg.sender == buyer);
+        active = false;
+        TokenInterface(ERC721Address).transferFrom(address(this), owner, tokenId);
+    }
+    
 }
+
