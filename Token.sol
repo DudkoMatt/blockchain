@@ -234,7 +234,7 @@ contract createBoxes is Ownable {
     
     //Length of array
     function totalLength() public view returns(uint) {
-        return boxes.length + 1;
+        return boxes.length;
     }
     
     //create random number
