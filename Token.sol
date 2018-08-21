@@ -242,7 +242,7 @@ contract createBoxes is Ownable {
     // mapping (address => uint) ownerBalance;
     
     address public market;
-    address public transferToSomeoneContract;
+    
     bool firstTime = true;
     // address approvedForAll = address(0);
     
@@ -263,8 +263,8 @@ contract createBoxes is Ownable {
 
     constructor (uint8 _x, uint8 _y) public {
         //uint k = 0;
-        width = _x;
-        height = _y;
+        width = _y;
+        height = _x;
         for(uint8 i = 0; i < _x; i++){
             for(uint8 j = 0; j < _y; j++){
                 Box memory temp = Box(i, j, 255,255,255, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether);
@@ -292,6 +292,12 @@ contract createBoxes is Ownable {
     
     function changePrice(uint _tokenId, uint _price) public onlyOwnerOf(_tokenId) {
         boxes[_tokenId].value = _price;
+    }
+    
+    function changeColor(uint _tokenId, uint8 _red, uint8 _green, uint8 _blue) public onlyOwnerOf(_tokenId) {
+        boxes[_tokenId].red = _red;
+        boxes[_tokenId].green = _green;
+        boxes[_tokenId].blue = _blue;
     }
 
     function setAddressOfMarket(address _address) public onlyOwner {
