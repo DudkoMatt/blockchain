@@ -134,9 +134,12 @@ contract ERC721 {
   function transfer(address _to, uint256 _tokenId) public;
   
   function approve(address _to, uint256 _tokenId) public;
-  //function setApprovalForAll(address _operator, bool _approved) external;
-  //function getApproved(uint256 _tokenId) external view returns (address);
-  //function isApprovedForAll(address _owner, address _operator) external view returns (bool);
+  
+  // function setApprovalForAll(address _operator) public;
+  
+  function getApproved() public view returns (address);
+  
+  // function isApprovedForAll(address _owner, address _operator) external view returns (bool);
 
   // function takeOwnership(uint256 _tokenId) public;
   
@@ -196,11 +199,6 @@ contract Ownable {
 
 }
 
-/*contract ExchangeIntrface {
-    function sendMoneyTo (address _from, address _to) public payable returns(bool);
-    function sendTokenTo (address _from, address _to, uint _token, uint _price) public returns(bool);
-}*/
-
 contract SafeTransferInterface{
     function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes _data) external returns(bytes4);
     function addToken(uint _id, address _owner, uint _price) public;
@@ -246,6 +244,7 @@ contract createBoxes is Ownable {
     address public market;
     address public transferToSomeoneContract;
     bool firstTime = true;
+    // address approvedForAll = address(0);
     
     modifier onlyOwnerOf(uint _tokenId) {
         require(msg.sender == ownerOf[_tokenId]);
@@ -276,7 +275,16 @@ contract createBoxes is Ownable {
     }
     
     
-    //ToDo: Это нужно?
+    /*function setApprovalForAll(address _operator) private {
+        require(firstTime);
+        approvedForAll = _operator;
+    }*/
+  
+    /*function getApproved() public view returns (address) {
+        return approvedForAll;
+    }*/
+    
+    
     //ToDo: Set value
     function generateRowAbove() public onlyOwner {
         for(uint8 i = 0; i < width; i++){
@@ -285,7 +293,6 @@ contract createBoxes is Ownable {
         height++;
     }
     
-    //ToDO: Это нужно?
     //ToDo: Set value
     function generateRowRigth() public onlyOwner {
         for(uint8 i = 0; i < height; i++){
@@ -295,36 +302,23 @@ contract createBoxes is Ownable {
     }
     
     
-    //ToDo
+
     function setAddressOfMarket(address _address) public onlyOwner {
+        
+        require(firstTime);
+        
         market = _address;
-        firstTimeFunction();
-    }
-    
-    function firstTimeFunction() private {
+        
         for(uint i = 0; i < boxes.length; i++){
             require(SafeTransferInterface(market).onERC721Received(market, msg.sender, i, "") == ERC721_RECEIVED);
-            //SafeTransferInterface(market).onERC721Received(market, msg.sender, i, "");
         }
+        
+        firstTime = false;
     }
     
-    //ToDo
-    function setAddressOfTransfer(address _address) public onlyOwner {
-        transferToSomeoneContract = _address;
-    }
     
-    function metadataOf(uint _tokenId) public view
-    returns (
-        uint8 Ox,
-        uint8 Oy,
-        uint8 red,
-        uint8 green,
-        uint8 blue,
-        uint8 weather,
-        uint8 shape,
-        address boxOwner,
-        bool isFree
-        ) {
+    
+    function metadataOf(uint _tokenId) public view returns (uint8 Ox, uint8 Oy, uint8 red, uint8 green, uint8 blue, uint8 weather, uint8 shape, address boxOwner, bool isFree) {
         Ox = boxes[_tokenId].Ox;
         Oy = boxes[_tokenId].Oy;
         red = boxes[_tokenId].red;
@@ -353,9 +347,11 @@ contract createBoxes is Ownable {
   }  
   
   
-  
-  function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) public payable {
-      //transferFrom(_from, _to, _tokenId);
+  // ToDO: Security
+  function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) public {
+      
+      require(msg.sender == ownerOf[_tokenId] || msg.sender == getApproved[_tokenId]);
+      
       getApproved[_tokenId] = _to;
       if(isContract(_to)){
         require(SafeTransferInterface(_to).onERC721Received(msg.sender, _from, _tokenId, data) == ERC721_RECEIVED);
@@ -364,17 +360,23 @@ contract createBoxes is Ownable {
       }
   }
   
-  
+  // ToDO: Security
   function transferFrom(address _from, address _to, uint256 _tokenId) public payable {
-      //require(_from == ownerOf[_tokenId] || getApproved[_tokenId] == _from);
+      
+      require(msg.sender == ownerOf[_tokenId] || getApproved[_tokenId] == msg.sender || msg.sender == address(this) || msg.sender == market);
+      
       ownerOf[_tokenId] = _to;
       balanceOf[_from] = balanceOf[_from].sub(1);
       balanceOf[_to] = balanceOf[_to].add(1);
   }
   
   
-  
-  function transfer(address _to, uint256 _tokenId) public onlyOwnerOf(_tokenId) {
+  // ToDO: Security
+  function transfer(address _to, uint256 _tokenId) public {
+      
+       
+       require(msg.sender == ownerOf[_tokenId] || getApproved[_tokenId] == msg.sender || msg.sender == address(this) || msg.sender == market);
+      
         ownerOf[_tokenId] = _to;
         balanceOf[msg.sender] = balanceOf[msg.sender].sub(1);
         balanceOf[_to] = balanceOf[_to].add(1);
@@ -393,3 +395,4 @@ contract createBoxes is Ownable {
   
  
 }
+

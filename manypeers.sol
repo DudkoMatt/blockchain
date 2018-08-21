@@ -128,7 +128,6 @@ contract ICO is Owner, ERC20  /* Initial Coin Offering */
 }
 
 
-
 contract TokenInterface {
     function metadataOf(uint _tokenId) public view returns (uint8 Ox, uint8 Oy, uint8 red, uint8 green, uint8 blue, uint8 weather, uint8 shape, address boxOwner, bool isFree);
     function transferFrom(address _from, address _to, uint256 _tokenId) public payable;
@@ -184,7 +183,6 @@ contract multiToken is Owner
     }
 
 
-    //ToDo: security
     function addToken(uint _id, address _owner, uint _price) public onlyERC721
     {
         
@@ -197,9 +195,7 @@ contract multiToken is Owner
         
     }
     
-    //ToDo: security
-    function readdToken(uint _id) public {
-        
+    function readdToken(uint _id) private {
         getTokenById[_id].isSold = false;
         
     }
@@ -207,7 +203,7 @@ contract multiToken is Owner
     
     function removeToken(uint _id) public
     {
-        
+        require(msg.sender == getTokenById[_id].Owner || msg.sender == address(this));
         getTokenById[_id].isSold = true;
         
         // //getTokenById[_id].isSold = true;
@@ -237,17 +233,19 @@ contract multiToken is Owner
         
     }
     
-    function buyToken(address _seller, uint _id) public payable
+    function buyToken(uint _id) public payable
     {
         
         //ToDo: РАСКОММЕНТИРОВАТЬ
-        //require(getTokenById[_id].price == msg.value);
-        
-        
-        TokenInterface(ERC721Address).transferFrom(_seller, msg.sender, _id);
-        
+        require(getTokenById[_id].price == msg.value);
         
         removeToken(_id);
+        
+        (getTokenById[_id].Owner).transfer(msg.value);
+        
+        TokenInterface(ERC721Address).transferFrom(address(this), msg.sender, _id);
+        
+        
         
         
         //_seller.transfer(msg.value);
@@ -271,8 +269,7 @@ contract multiToken is Owner
     
     function onERC721Received (address _operator, address _from, uint256 _tokenId, bytes _data) external returns(bytes4)  {
         
-        //ToDo: Это будет так работать???
-        //require(_operator == ERC721Address);
+        require(msg.sender == ERC721Address);
         
         if(keccak256('') == keccak256(_data)){
             addToken(_tokenId, _from, getTokenById[_tokenId].price);
@@ -322,8 +319,11 @@ contract Deal {
     }
     
     function buyToken() public payable {
-        require(msg.sender == buyer && msg.value == price);
-        owner.transfer(msg.value);
+        address flag = address(0);
+        (,,,,,,,flag,) = TokenInterface(ERC721Address).metadataOf(tokenId);
+        require(msg.sender == buyer && msg.value >= price && flag == address(this));
+        (msg.sender).transfer(msg.value - price);
+        owner.transfer(price);
         TokenInterface(ERC721Address).transferFrom(address(this), buyer, tokenId);
     }
     
