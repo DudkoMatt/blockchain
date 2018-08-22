@@ -41,13 +41,12 @@ contract Owner {
 }
 
 contract TokenInterface {
-    function metadataOf(uint _tokenId) public view returns (uint8 Ox, uint8 Oy, uint8 red, uint8 green, uint8 blue, uint8 weather, uint8 shape, address boxOwner, bool isFree);
-    function transferFrom(address _from, address _to, uint256 _tokenId) public payable;
+    function metadataOf(uint _tokenId) public view returns (uint8 red, uint8 green, uint8 blue, uint8 weather, uint8 picture, address boxOwner, uint value);
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public;
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) public;
 }
 
 contract multiToken is Owner {
-    
-    event NewDealCreated(address indexed _from, address indexed _to, uint indexed _tokenId, uint _price, address _contractAddress);
     
     bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
     
@@ -56,8 +55,6 @@ contract multiToken is Owner {
         address Owner;
         bool isSold;
     }
-    
-    Deal[] allDeals;
     
     uint[] getAllTokens;
     mapping (uint => Token) public getTokenById;
@@ -85,7 +82,6 @@ contract multiToken is Owner {
         
     }
 
-
     function addToken(uint _id, address _owner, uint _price) public onlyERC721
     {
         if(getTokenById[_id].isSold){
@@ -94,19 +90,22 @@ contract multiToken is Owner {
             getTokenById[_id] = Token(_price, _owner, false);
             getAllTokens.push(_id);
         }
-        
     }
     
     function readdToken(uint _id) private {
         getTokenById[_id].isSold = false;
-        
     }
     
     
     function removeToken(uint _id) public
     {
         require(msg.sender == getTokenById[_id].Owner || msg.sender == address(this));
-        getTokenById[_id].isSold = true;
+        if (msg.sender == getTokenById[_id].Owner){
+            getTokenById[_id].isSold = true;
+            TokenInterface(ERC721Address).safeTransferFrom(address(this), getTokenById[_id].Owner, _id);
+        } else if (msg.sender == address(this)) {
+            getTokenById[_id].isSold = true;
+        }
     }
     
     function buyToken(uint _id) public payable
@@ -115,36 +114,21 @@ contract multiToken is Owner {
         removeToken(_id);
         (getTokenById[_id].Owner).transfer(getTokenById[_id].price);
         (msg.sender).transfer(msg.value - getTokenById[_id].price);
-        TokenInterface(ERC721Address).transferFrom(address(this), msg.sender, _id);
+        TokenInterface(ERC721Address).safeTransferFrom(address(this), msg.sender, _id);
     }
     
-
-    function bytesToAddress(bytes a) public pure returns(address){
-        bytes20 result = bytes20(0);
-        for(uint i = 19; i > 0; i--){
-            result = (result | (bytes20(a[i]))) >> 8;
-        }
-        return address(result | a[0]);
-    }
-    
+    /*function updatePrice(uint _tokenId, uint _price) public {
+        require(msg.sender == ERC721Address);
+        getTokenById[_tokenId].price = _price;
+    }*/
     
     function onERC721Received (address _operator, address _from, uint256 _tokenId, bytes _data) external returns(bytes4)  {
-        
         require(msg.sender == ERC721Address);
-        
-        if(keccak256('') == keccak256(_data)){
-            addToken(_tokenId, _from, getTokenById[_tokenId].price);
-            TokenInterface(ERC721Address).transferFrom(_from, address(this), _tokenId);
-        } else {
-            Deal newDeal = new Deal(_from, bytesToAddress(_data), _tokenId, getTokenById[_tokenId].price, ERC721Address);
-            TokenInterface(ERC721Address).transferFrom(_from, newDeal, _tokenId);
-            emit NewDealCreated(_from, bytesToAddress(_data), _tokenId, getTokenById[_tokenId].price, newDeal);
-        }
+        addToken(_tokenId, _from, getTokenById[_tokenId].price);
         return ERC721_RECEIVED;
-        
     }
     
-    function getMetadataOf(uint _id) public view returns (uint8 Ox, uint8 Oy, uint8 red, uint8 green, uint8 blue, uint8 weather, uint8 shape, address boxOwner, bool isFree) {
+    function getMetadataOf(uint _id) public view returns (uint8 red, uint8 green, uint8 blue, uint8 weather, uint8 picture, address boxOwner, uint value) {
         return TokenInterface(ERC721Address).metadataOf(_id);
     }
     
@@ -159,43 +143,3 @@ contract multiToken is Owner {
     }
     
 }
-
-
-contract Deal {
-    
-    address ERC721Address;
-    
-    address public owner;
-    address public buyer;
-    uint public tokenId;
-    uint public price;
-    
-    bool active = true;
-    
-    constructor (address _owner, address _to, uint _tokenId, uint _price, address _erc721) public {
-        owner = _owner;
-        buyer = _to;
-        tokenId = _tokenId;
-        price = _price;
-        ERC721Address = _erc721;
-    }
-    
-    function buyToken() public payable {
-        require(active);
-        active = false;
-        address flag = address(0);
-        (,,,,,,,flag,) = TokenInterface(ERC721Address).metadataOf(tokenId);
-        require(msg.sender == buyer && msg.value >= price && flag == address(this));
-        (msg.sender).transfer(msg.value - price);
-        owner.transfer(price);
-        TokenInterface(ERC721Address).transferFrom(address(this), buyer, tokenId);
-    }
-    
-    function cancelTransaction() public {
-        require(msg.sender == owner || msg.sender == buyer);
-        active = false;
-        TokenInterface(ERC721Address).transferFrom(address(this), owner, tokenId);
-    }
-    
-}
-

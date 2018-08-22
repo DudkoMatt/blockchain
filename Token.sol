@@ -133,7 +133,7 @@ contract ERC721 {
   
   function transfer(address _to, uint256 _tokenId) public;
   
-  function getApproved() public view returns (address);
+  // function getApproved() public view returns (address);
   
 } //token standart.functionslibrary
 
@@ -192,8 +192,7 @@ contract Ownable {
 } //creating owner of contract.functionslibrary
 
 contract SafeTransferInterface{
-    function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes _data) external returns(bytes4); 
-    function addToken(uint _id, address _owner, uint _price) public; 
+    function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes _data) external returns(bytes4);
 } 
 
 contract createBoxes is Ownable {
@@ -218,12 +217,15 @@ contract createBoxes is Ownable {
     mapping (address => uint16) public balanceOf; //sum of boxes of one user
     
     uint randNonce = 0; 
+    uint initIndex = 0;
     
     uint8 public width; 
     
     address public market;
+    address public trade;
     
     bool firstTime = true;
+    bool firstTimeSmb = true;
     bool public isExpansionBanned = false;
     
     //require isOwner?
@@ -250,7 +252,6 @@ contract createBoxes is Ownable {
     //
     function creating_lines_base(uint8 _x) external onlyOwner { 
         require(!isExpansionBanned);
-        width = uint8(width.add(_x));
             for(uint8 j = 0; j < _x; j++){
                 Box memory temp = Box(randMod(256),randMod(256),randMod(256), uint8(randMod(10)), uint8(randMod(10)), 0.0025 ether);
                 ownerOf[boxes.push(temp)-1] = msg.sender;
@@ -260,7 +261,13 @@ contract createBoxes is Ownable {
     }
     
 
-    function generateRowAbove() public onlyOwner {
+    function setWidth(uint8 _x) external onlyOwner {
+        require(!isExpansionBanned);
+        width = _x;
+    }
+
+
+    /*function generateRowAbove() public onlyOwner {
         require(!isExpansionBanned);
         for(uint8 i = 0; i < width; i++){
             safeTransferFrom(address(this), market, boxes.push(Box(255,255,255, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether)));
@@ -274,9 +281,10 @@ contract createBoxes is Ownable {
             safeTransferFrom(address(this), market, boxes.push(Box(255,255,255, uint8(randMod(7)), uint8(randMod(7)), 0.000001 ether)));
         }
         width++;
-    }
+    }*/
     
-    function changePrice(uint _tokenId, uint _price) public onlyOwnerOf(_tokenId) {
+    function changePrice(uint _tokenId, uint _price) public {
+        require(msg.sender == ownerOf[_tokenId]);
         boxes[_tokenId].value = _price;
     }
     
@@ -287,24 +295,42 @@ contract createBoxes is Ownable {
     }
 
     function setAddressOfMarket(address _address) public onlyOwner {
-        require(firstTime);
+        require(firstTime && _address != address(0));
         market = _address;
-        for(uint i = 0; i < boxes.length; i++){
-            require(SafeTransferInterface(market).onERC721Received(market, msg.sender, i, "") == ERC721_RECEIVED);
-        }
         firstTime = false;
     }
     
+    function setAddressOfTrade(address _address) public onlyOwner {
+        require(firstTimeSmb && _address != address(0));
+        trade = _address;
+        firstTimeSmb = false;
+    }
     
+    function initBoxes(uint _amount) public onlyOwner {
+        uint a = initIndex;
+        for(uint i = a; i < min(boxes.length, a + _amount); i++){
+            safeTransferFrom(owner, market, i);
+            // require(SafeTransferInterface(market).onERC721Received(market, msg.sender, i, "") == ERC721_RECEIVED);
+        }
+        initIndex = i;
+    }
     
-    function metadataOf(uint _tokenId) public view returns (uint8 red, uint8 green, uint8 blue, uint8 weather, uint8 picture, address boxOwner, bool isFree) {
+    function min(uint _x, uint _y) internal pure returns(uint) {
+        if(_x < _y) {
+            return _x;
+        } else {
+            return _y;
+        }
+    }
+    
+    function metadataOf(uint _tokenId) public view returns (uint8 red, uint8 green, uint8 blue, uint8 weather, uint8 picture, address boxOwner, uint value) {
         red = boxes[_tokenId].red;
         green = boxes[_tokenId].green;
         blue = boxes[_tokenId].blue;
         weather = boxes[_tokenId].weather;
         picture = boxes[_tokenId].picture;
         boxOwner = ownerOf[_tokenId];
-        isFree = (ownerOf[_tokenId] == address(0));
+        value = boxes[_tokenId].value;
     }
 
    
@@ -326,24 +352,21 @@ contract createBoxes is Ownable {
   
 
   function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) public onlyOwnerOf(_tokenId) {
+      transferFrom(_from, _to, _tokenId);
       if(isContract(_to)){
         require(SafeTransferInterface(_to).onERC721Received(msg.sender, _from, _tokenId, data) == ERC721_RECEIVED);
-      } else {
-          transferFrom(_from, _to, _tokenId);
       }
   }
   
   
-  function transferFrom(address _from, address _to, uint256 _tokenId) public payable {
-      require(msg.sender == ownerOf[_tokenId] || msg.sender == address(this) || msg.sender == market);
+  function transferFrom(address _from, address _to, uint256 _tokenId) public payable onlyOwnerOf(_tokenId) {
       ownerOf[_tokenId] = _to;
       balanceOf[_from] = uint16(balanceOf[_from].sub(1));
       balanceOf[_to] = uint16(balanceOf[_to].add(1));
   }
   
   
-  function transfer(address _to, uint256 _tokenId) public {
-        require(msg.sender == ownerOf[_tokenId] || msg.sender == address(this) || msg.sender == market);
+  function transfer(address _to, uint256 _tokenId) public onlyOwnerOf(_tokenId) {
         ownerOf[_tokenId] = _to;
         balanceOf[msg.sender] = uint16(balanceOf[msg.sender].sub(1));
         balanceOf[_to] = uint16(balanceOf[_to].add(1));
@@ -359,4 +382,3 @@ contract createBoxes is Ownable {
   
  
 }
-
