@@ -1,7 +1,6 @@
-Final Changes:
-createBoxes: 0x8ce04420e631989ebd755ee1e0d4fdca2959835f
-multiToken: 0x30d6e067f70d420940ef8128b8de636ce1a7d0e0
-Trade: 0x1ce13c25a735356aac17e564b715eb2a5e880f3e
+createBoxes: 0x288ff14cca2285ce39f0ed8bc19a62f767dcdad2
+multiToken: 0xffff0e24ba9e5bd934728bb5bf8bda2cd8f71425
+Trade: 0x064916d05fd7a781889bdd1e07d1c1c2fc644c7d
 
 
 67 created

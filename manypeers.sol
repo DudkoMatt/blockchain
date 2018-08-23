@@ -85,19 +85,21 @@ contract multiToken is Owner {
     function addToken(uint _id, address _owner, uint _price) public onlyERC721
     {
         if(getTokenById[_id].isSold){
-            readdToken(_id);
+            readdToken(_id, _owner, _price);
         } else {
             getTokenById[_id] = Token(_price, _owner, false);
             getAllTokens.push(_id);
         }
     }
     
-    function readdToken(uint _id) private {
+    function readdToken(uint _id, address _owner, uint _price) private {
         getTokenById[_id].isSold = false;
+        getTokenById[_id].Owner = _owner;
+        getTokenById[_id].price = _price;
     }
     
     function removeToken(uint _id) public {
-        require(msg.sender == getTokenById[_id].Owner);
+        require(msg.sender == getTokenById[_id].Owner && !getTokenById[_id].isSold);
         getTokenById[_id].isSold = true;
         TokenInterface(ERC721Address).safeTransferFrom(address(this), getTokenById[_id].Owner, _id);
     }
@@ -109,7 +111,7 @@ contract multiToken is Owner {
     
     function buyToken(uint _id) public payable
     {
-        require(getTokenById[_id].price <= msg.value);
+        require(getTokenById[_id].price <= msg.value && !getTokenById[_id].isSold);
         _removeToken(_id);
         (getTokenById[_id].Owner).transfer(getTokenById[_id].price);
         (msg.sender).transfer(msg.value - getTokenById[_id].price);
@@ -123,7 +125,9 @@ contract multiToken is Owner {
     
     function onERC721Received (address _operator, address _from, uint256 _tokenId, bytes _data) external returns(bytes4)  {
         require(msg.sender == ERC721Address);
-        addToken(_tokenId, _from, getTokenById[_tokenId].price);
+        uint val;
+        (,,,,,,val) = TokenInterface(ERC721Address).metadataOf(_tokenId);
+        addToken(_tokenId, _from, val);
         return ERC721_RECEIVED;
     }
     
