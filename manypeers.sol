@@ -96,22 +96,21 @@ contract multiToken is Owner {
         getTokenById[_id].isSold = false;
     }
     
+    function removeToken(uint _id) public {
+        require(msg.sender == getTokenById[_id].Owner);
+        getTokenById[_id].isSold = true;
+        TokenInterface(ERC721Address).safeTransferFrom(address(this), getTokenById[_id].Owner, _id);
+    }
     
-    function removeToken(uint _id) public
+    function _removeToken(uint _id) private
     {
-        require(msg.sender == getTokenById[_id].Owner || msg.sender == address(this));
-        if (msg.sender == getTokenById[_id].Owner){
             getTokenById[_id].isSold = true;
-            TokenInterface(ERC721Address).safeTransferFrom(address(this), getTokenById[_id].Owner, _id);
-        } else if (msg.sender == address(this)) {
-            getTokenById[_id].isSold = true;
-        }
     }
     
     function buyToken(uint _id) public payable
     {
         require(getTokenById[_id].price <= msg.value);
-        removeToken(_id);
+        _removeToken(_id);
         (getTokenById[_id].Owner).transfer(getTokenById[_id].price);
         (msg.sender).transfer(msg.value - getTokenById[_id].price);
         TokenInterface(ERC721Address).safeTransferFrom(address(this), msg.sender, _id);
@@ -143,3 +142,4 @@ contract multiToken is Owner {
     }
     
 }
+
